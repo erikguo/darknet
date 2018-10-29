@@ -14,7 +14,7 @@ extern "C" {
 #include "tree.h"
 
 typedef enum {
-    CONSTANT, STEP, EXP, POLY, STEPS, SIG, RANDOM
+    CONSTANT, STEP, EXP, POLY, STEPS, SIG, RANDOM, TRIANGULAR2, EXPRANGE
 } learning_rate_policy;
 
 typedef struct network{
@@ -35,6 +35,9 @@ typedef struct network{
     float gamma;
     float scale;
     float power;
+	float maxlr;
+	float minlr;
+	int stepsize;
     int time_steps;
     int step;
     int max_batches;

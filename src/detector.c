@@ -141,7 +141,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             //int dim_w = (random_val + (init_w / 32 - 5)) * 32;    // +-160
             //int dim_h = (random_val + (init_h / 32 - 5)) * 32;    // +-160
 
-            float random_val = rand_scale(1.4);    // *x or /x
+            float random_val = rand_scale(1.2);    // *x or /x
             int dim_w = roundl(random_val*init_w / 32) * 32;
             int dim_h = roundl(random_val*init_h / 32) * 32;
 
@@ -758,14 +758,14 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 
             unique_truth_count += num_labels;
 
-            //static int previous_errors = 0;
-            //int total_errors = fp_for_thresh + (unique_truth_count - tp_for_thresh);
-            //int errors_in_this_image = total_errors - previous_errors;
-            //previous_errors = total_errors;
-            //if(reinforcement_fd == NULL) reinforcement_fd = fopen("reinforcement.txt", "wb");
-            //char buff[1000];
-            //sprintf(buff, "%s\n", path);
-            //if(errors_in_this_image > 0) fwrite(buff, sizeof(char), strlen(buff), reinforcement_fd);
+            static int previous_errors = 0;
+            int total_errors = fp_for_thresh + (unique_truth_count - tp_for_thresh);
+            int errors_in_this_image = total_errors - previous_errors;
+            previous_errors = total_errors;
+            if(reinforcement_fd == NULL) reinforcement_fd = fopen("reinforcement.txt", "wb");
+            char buff[1000];
+            sprintf(buff, "%s\n", path);
+            if(errors_in_this_image > 0) fwrite(buff, sizeof(char), strlen(buff), reinforcement_fd);
 
             free_detections(dets, nboxes);
             free(id);

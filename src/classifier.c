@@ -156,7 +156,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
             draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches);
 #endif  // OPENCV
 
-        if (i >= (iter_save + 100)) {
+        if (i >= (iter_save + 1000)) {
             iter_save = i;
 #ifdef GPU
             if (ngpus != 1) sync_nets(nets, ngpus, 0);
@@ -369,8 +369,8 @@ void validate_classifier_crop(char *datacfg, char *filename, char *weightfile)
 void validate_classifier_10(char *datacfg, char *filename, char *weightfile)
 {
     int i, j;
-    network net = parse_network_cfg(filename);
-    set_batch_network(&net, 1);
+    network net = parse_network_cfg_custom(filename, 1);
+    // set_batch_network(&net, 1);
     if(weightfile){
         load_weights(&net, weightfile);
     }
@@ -408,7 +408,7 @@ void validate_classifier_10(char *datacfg, char *filename, char *weightfile)
         int h = net.h;
         int shift = 32;
         image im = load_image_color(paths[i], w+shift, h+shift);
-        image images[10];
+		image images[10];
         images[0] = crop_image(im, -shift, -shift, w, h);
         images[1] = crop_image(im, shift, -shift, w, h);
         images[2] = crop_image(im, 0, 0, w, h);
@@ -425,7 +425,7 @@ void validate_classifier_10(char *datacfg, char *filename, char *weightfile)
             float *p = network_predict(net, images[j].data);
             if(net.hierarchy) hierarchy_predictions(p, net.outputs, net.hierarchy, 1);
             axpy_cpu(classes, 1, p, 1, pred, 1);
-            free_image(images[j]);
+			free_image(images[j]);
         }
         free_image(im);
         top_k(pred, classes, topk, indexes);
@@ -442,8 +442,8 @@ void validate_classifier_10(char *datacfg, char *filename, char *weightfile)
 void validate_classifier_full(char *datacfg, char *filename, char *weightfile)
 {
     int i, j;
-    network net = parse_network_cfg(filename);
-    set_batch_network(&net, 1);
+    network net = parse_network_cfg_custom(filename, 1);
+    // set_batch_network(&net, 1);
     if(weightfile){
         load_weights(&net, weightfile);
     }
@@ -487,8 +487,8 @@ void validate_classifier_full(char *datacfg, char *filename, char *weightfile)
         float *pred = network_predict(net, resized.data);
         if(net.hierarchy) hierarchy_predictions(pred, net.outputs, net.hierarchy, 1);
 
-        free_image(im);
-        free_image(resized);
+		if (resized.data != im.data) free_image(resized);
+		free_image(im);
         top_k(pred, classes, topk, indexes);
 
         if(indexes[0] == class_id) avg_acc += 1;
@@ -504,11 +504,11 @@ void validate_classifier_full(char *datacfg, char *filename, char *weightfile)
 void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
 {
     int i, j;
-    network net = parse_network_cfg(filename);
+    network net = parse_network_cfg_custom(filename, 1);
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    set_batch_network(&net, 1);
+    // set_batch_network(&net, 1);
     srand(time(0));
 
     list *options = read_data_cfg(datacfg);
@@ -531,7 +531,6 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
     float avg_acc = 0;
     float avg_topk = 0;
     int *indexes = calloc(topk, sizeof(int));
-
     for(i = 0; i < m; ++i){
         int class_id = -1;
         char *path = paths[i];
@@ -544,7 +543,7 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
         image im = load_image_color(paths[i], 0, 0);
         image resized = resize_min(im, net.w);
         image crop = crop_image(resized, (resized.w - net.w)/2, (resized.h - net.h)/2, net.w, net.h);
-        //show_image(im, "orig");
+		//show_image(im, "orig");
         //show_image(crop, "cropped");
         //cvWaitKey(0);
         float *pred = network_predict(net, crop.data);
@@ -553,22 +552,23 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
         if(resized.data != im.data) free_image(resized);
         free_image(im);
         free_image(crop);
-        top_k(pred, classes, topk, indexes);
-
+		top_k(pred, classes, topk, indexes);
         if(indexes[0] == class_id) avg_acc += 1;
+		else fprintf(stderr,"%s\n", paths[i]);
+
         for(j = 0; j < topk; ++j){
             if(indexes[j] == class_id) avg_topk += 1;
         }
 
-        printf("%d: top 1: %f, top %d: %f\n", i, avg_acc/(i+1), topk, avg_topk/(i+1));
+        printf("%d: top 1: %f, top %d: %f, path: %s\n", i, avg_acc/(i+1), topk, avg_topk/(i+1), paths[i]);
     }
 }
 
 void validate_classifier_multi(char *datacfg, char *filename, char *weightfile)
 {
     int i, j;
-    network net = parse_network_cfg(filename);
-    set_batch_network(&net, 1);
+    network net = parse_network_cfg_custom(filename, 1);
+    //set_batch_network(&net, 1);
     if(weightfile){
         load_weights(&net, weightfile);
     }
@@ -635,7 +635,7 @@ void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filena
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    set_batch_network(&net, 1);
+    //set_batch_network(&net, 1);
     srand(2222222);
 
     list *options = read_data_cfg(datacfg);
@@ -718,7 +718,7 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    set_batch_network(&net, 1);
+    //set_batch_network(&net, 1);
     srand(2222222);
 
     list *options = read_data_cfg(datacfg);
@@ -773,12 +773,12 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
 void label_classifier(char *datacfg, char *filename, char *weightfile)
 {
     int i;
-    network net = parse_network_cfg(filename);
-    set_batch_network(&net, 1);
+    network net = parse_network_cfg_custom(filename, 1);
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    srand(time(0));
+	//set_batch_network(&net, 1);
+	srand(time(0));
 
     list *options = read_data_cfg(datacfg);
 

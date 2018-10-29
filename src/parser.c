@@ -610,7 +610,9 @@ learning_rate_policy get_policy(char *s)
     if (strcmp(s, "exp")==0) return EXP;
     if (strcmp(s, "sigmoid")==0) return SIG;
     if (strcmp(s, "steps")==0) return STEPS;
-    fprintf(stderr, "Couldn't find policy %s, going with constant\n", s);
+	if (strcmp(s, "triangular2") == 0) return TRIANGULAR2;
+	if (strcmp(s, "exprange") == 0) return EXPRANGE;
+	fprintf(stderr, "Couldn't find policy %s, going with constant\n", s);
     return CONSTANT;
 }
 
@@ -691,7 +693,13 @@ void parse_net_options(list *options, network *net)
         net->step = option_find_int(options, "step", 1);
     } else if (net->policy == POLY || net->policy == RANDOM){
         //net->power = option_find_float(options, "power", 1);
-    }
+	}
+	else if (net->policy == TRIANGULAR2 || net->policy == EXPRANGE) {
+		net->gamma = option_find_float(options, "gamma", 0.99994);
+		net->stepsize = option_find_int(options, "stepsize", 1000);
+		net->maxlr = option_find_float(options, "maxlr", 0.001);
+		net->minlr = option_find_float(options, "minlr", 0.00001);
+	}
     net->max_batches = option_find_int(options, "max_batches", 0);
 }
 

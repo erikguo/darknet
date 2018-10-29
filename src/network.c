@@ -90,7 +90,7 @@ float get_current_rate(network net)
 {
     int batch_num = get_current_batch(net);
     int i;
-    float rate;
+    float rate, cycle, x;
     if (batch_num < net.burn_in) return net.learning_rate * pow((float)batch_num / net.burn_in, net.power);
     switch (net.policy) {
         case CONSTANT:
@@ -115,7 +115,17 @@ float get_current_rate(network net)
             return net.learning_rate * pow(rand_uniform(0,1), net.power);
         case SIG:
             return net.learning_rate * (1./(1.+exp(net.gamma*(batch_num - net.step))));
-        default:
+		case TRIANGULAR2:
+			cycle = floor(1 + batch_num / (2 * net.stepsize));
+			x = fabs((float)batch_num / net.stepsize - 2 * cycle + 1);
+			rate = net.minlr + (net.maxlr - net.minlr) * max(0, 1 - x) / pow(2, (cycle - 1));
+			return rate;
+		case EXPRANGE:
+			cycle = floor(1 + batch_num / (2 * net.stepsize));
+			x = fabs((float)batch_num / net.stepsize - 2 * cycle + 1);
+			rate = net.minlr + (net.maxlr - net.minlr) * max(0, 1 - x) * pow(net.gamma, batch_num);
+			return rate;
+		default:
             fprintf(stderr, "Policy is weird!\n");
             return net.learning_rate;
     }
@@ -651,11 +661,18 @@ void free_detections(detection *dets, int n)
 
 float *network_predict_image(network *net, image im)
 {
-    //image imr = letterbox_image(im, net->w, net->h);
-    image imr = resize_image(im, net->w, net->h);
-    set_batch_network(net, 1);
-    float *p = network_predict(*net, imr.data);
-    free_image(imr);
+	float *p;
+	set_batch_network(net, 1);
+	if (im.w == net->w && im.h == net->h) {
+		p = network_predict(*net, im.data);
+	}
+	else {
+		//image imr = letterbox_image(im, net->w, net->h);
+		image imr = resize_image(im, net->w, net->h);
+		p = network_predict(*net, imr.data);
+		free_image(imr);
+	}
+    
     return p;
 }
 
