@@ -116,8 +116,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.hue = net.hue;
 
 #ifdef OPENCV
-    args.threads = 3 * ngpus;   // Amazon EC2 Tesla V100: p3.2xlarge (8 logical cores) - p3.16xlarge
-    //args.threads = 12 * ngpus;    // Ryzen 7 2700X (16 logical cores)
+    //args.threads = 3 * ngpus;   // Amazon EC2 Tesla V100: p3.2xlarge (8 logical cores) - p3.16xlarge
+    args.threads = 12 * ngpus;    // Ryzen 7 2700X (16 logical cores); double cpus 32 logical cores
     IplImage* img = NULL;
     float max_img_loss = 5;
     int number_of_lines = 100;
